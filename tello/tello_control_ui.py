@@ -11,6 +11,8 @@ import platform
 import tello
 import detect as dt
 
+DRONE = False
+
 
 class TelloUI:
     """Wrapper class to enable the GUI."""
@@ -95,9 +97,10 @@ class TelloUI:
             print(e)
 
     def _yoloBegin(self):
-        # dt.start_detect(
-        #     "--source udp://@0.0.0.0:11111 --weights ../weights/yolov5l.pt --conf 0.55 --classes 0".split())
-        dt.start_detect("--source 0 --weights ../weights/yolov5l.pt --conf 0.55 --classes 0".split())
+        if DRONE:
+            dt.start_detect("--source udp://@0.0.0.0:11111 --weights ../weights/yolov5l.pt --conf 0.55 --classes 0".split())
+        else:
+            dt.start_detect("--source 0 --weights ../weights/yolov5l.pt --conf 0.55 --classes 0".split())
 
     # def videoLoop(self):
     #     """
@@ -172,13 +175,16 @@ class TelloUI:
         while True:
             if dt.tools.finishOnePic:
                 self.setStateMessage(dt.tools.resultList)
+            else:
+                self.setStateMessage([]);
             time.sleep(0.01)
 
     def setStateMessage(self, stateMess):
         mess = ''
         for i in range(len(stateMess)):
-            mess = mess + "检测到的第{}个目标左上角坐标{}右下角坐标{}".format(i + 1, str(stateMess[i][0]), str(stateMess[i][1]))
+            mess = mess + "检测到的第{}个目标左上角坐标{}右下角坐标{}\n".format(i + 1, str(stateMess[i][0]), str(stateMess[i][1]))
         self.state_message.set(mess)
+
     def openCmdWindow(self):
         """
         open the cmd window and initial all the button and text
@@ -190,7 +196,7 @@ class TelloUI:
         panel = Toplevel(self.root)
         panel.wm_title("Command Panel")
 
-        text_state = tki.Label(panel, textvariable=self.state_message, font='Helvetica 10 bold')
+        text_state = tki.Label(panel, textvariable=self.state_message, font='Helvetica 10 bold', height=5, width=20)
 
         text_state.pack(side='top', fill='both', expand="yes", padx=10, pady=5)
 
@@ -202,18 +208,16 @@ class TelloUI:
         #                   )
         # text0.pack(side='top')
 
-        text1 = tki.Label(panel, text=
-        'W - Move Tello Up\t\t\tArrow Up - Move Tello Forward\n'
-        'S - Move Tello Down\t\t\tArrow Down - Move Tello Backward\n'
-        'A - Rotate Tello Counter-Clockwise\tArrow Left - Move Tello Left\n'
-        'D - Rotate Tello Clockwise\t\tArrow Right - Move Tello Right',
-                          justify="left")
-        text1.pack(side="top")
+        # text1 = tki.Label(panel, text=
+        # 'W - Move Tello Up\t\t\tArrow Up - Move Tello Forward\n'
+        # 'S - Move Tello Down\t\t\tArrow Down - Move Tello Backward\n'
+        # 'A - Rotate Tello Counter-Clockwise\tArrow Left - Move Tello Left\n'
+        # 'D - Rotate Tello Clockwise\t\tArrow Right - Move Tello Right',
+        #                   justify="left")
+        # text1.pack(side="top")
 
-        self.btn_landing = tki.Button(
-            panel, text="Land", relief="raised", command=self.telloLanding)
-        self.btn_landing.pack(side="bottom", fill="both",
-                              expand="yes", padx=10, pady=5)
+        self.btn_landing = tki.Button(panel, text="Land", relief="raised", command=self.telloLanding)
+        self.btn_landing.pack(side="bottom", fill="both", expand="yes", padx=10, pady=5)
 
         self.btn_takeoff = tki.Button(
             panel, text="Takeoff", relief="raised", command=self.telloTakeOff)

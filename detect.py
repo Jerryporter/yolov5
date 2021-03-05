@@ -19,6 +19,7 @@ from utils import tools as tools
 parser = argparse.ArgumentParser()
 opt = parser.parse_args()
 
+
 def detect(save_img=False):
     source, weights, view_img, save_txt, imgsz = opt.source, opt.weights, opt.view_img, opt.save_txt, opt.img_size
     webcam = source.isnumeric() or source.endswith('.txt') or source.lower().startswith(
@@ -98,6 +99,8 @@ def detect(save_img=False):
                 '' if dataset.mode == 'image' else f'_{frame}')  # img.txt
             s += '%gx%g ' % img.shape[2:]  # print string
             gn = torch.tensor(im0.shape)[[1, 0, 1, 0]]  # normalization gain whwh
+            count = -1
+            tools.startProcOnePic()
             if len(det):
                 # Rescale boxes from img_size to im0 size
                 det[:, :4] = scale_coords(img.shape[2:], det[:, :4], im0.shape).round()
@@ -107,8 +110,7 @@ def detect(save_img=False):
                     n = (det[:, -1] == c).sum()  # detections per class
                     s += f"{n} {names[int(c)]}{'s' * (n > 1)}, "  # add to string
 
-                count = -1
-                tools.startProcOnePic()
+
                 # Write results
                 for *xyxy, conf, cls in reversed(det):
                     count += 1
@@ -190,8 +192,6 @@ def start_detect(instr):
                 strip_optimizer(opt.weights)
         else:
             detect()
-
-
 
 
 if __name__ == '__main__':
