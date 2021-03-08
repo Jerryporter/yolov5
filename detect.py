@@ -14,13 +14,12 @@ from utils.general import check_img_size, check_requirements, check_imshow, non_
     scale_coords, xyxy2xywh, strip_optimizer, set_logging, increment_path
 from utils.plots import plot_one_box
 from utils.torch_utils import select_device, load_classifier, time_synchronized
-from utils import tools as tools
 
 parser = argparse.ArgumentParser()
 opt = parser.parse_args()
 
 
-def detect(save_img=False):
+def detect(conn,save_img=False):
     source, weights, view_img, save_txt, imgsz = opt.source, opt.weights, opt.view_img, opt.save_txt, opt.img_size
     webcam = source.isnumeric() or source.endswith('.txt') or source.lower().startswith(
         ('rtsp://', 'rtmp://', 'http://', 'udp://'))
@@ -99,8 +98,9 @@ def detect(save_img=False):
                 '' if dataset.mode == 'image' else f'_{frame}')  # img.txt
             s += '%gx%g ' % img.shape[2:]  # print string
             gn = torch.tensor(im0.shape)[[1, 0, 1, 0]]  # normalization gain whwh
+
             count = -1
-            tools.startProcOnePic()
+            result_list=[]
             if len(det):
                 # Rescale boxes from img_size to im0 size
                 det[:, :4] = scale_coords(img.shape[2:], det[:, :4], im0.shape).round()
@@ -122,14 +122,15 @@ def detect(save_img=False):
                             f.write(('%g ' * len(line)).rstrip() % line + '\n')
 
                     if save_img or view_img:  # Add bbox to image
-                        label = '{0} {1:.2f} num{2}'.format(names[int(cls)], conf, count)
+                        label = '{0} {1:.2f} target{2}'.format(names[int(cls)], conf, count)
                         plot_one_box(xyxy, im0, label=label, color=colors[int(cls)], line_thickness=3)
                         # print the position of object which is in the picture
                         # print("**********************************\n")
                         # print((int(xyxy[0]), int(xyxy[1])), (int(xyxy[2]), int(xyxy[3])))
                         # print("**********************************\n")
-                        tools.resultList.append([(int(xyxy[0]), int(xyxy[1])), (int(xyxy[2]), int(xyxy[3]))])
-            tools.finishProcOnePic()
+                        result_list.append([(int(xyxy[0]), int(xyxy[1])), (int(xyxy[2]), int(xyxy[3]))])
+            conn.send(result_list)
+            result_list.clear()
             # Print time (inference + NMS)
             print(f'{s}Done. ({t2 - t1:.3f}s)')
             print('\n' + "---------------------------------------------")
@@ -162,7 +163,7 @@ def detect(save_img=False):
     # print(f'Done. ({time.time() - t0:.3f}s)')
 
 
-def start_detect(instr):
+def start_detect(instr,conn):
     # print(instr)
     parser.add_argument('--weights', nargs='+', type=str, default='yolov5s.pt', help='model.pt path(s)')
     parser.add_argument('--source', type=str, default='data/images',
@@ -188,12 +189,11 @@ def start_detect(instr):
     with torch.no_grad():
         if opt.update:  # update all models (to fix SourceChangeWarning)
             for opt.weights in ['yolov5s.pt', 'yolov5m.pt', 'yolov5l.pt', 'yolov5x.pt']:
-                detect()
+                detect(conn=conn)
                 strip_optimizer(opt.weights)
         else:
-            detect()
+            detect(conn=conn)
 
 
 if __name__ == '__main__':
-    print()
-    # start_detect("--source 0 --weights weights/yolov5l.pt --conf 0.55 --classes 0".split())
+    start_detect("--source 0 --weights weights/yolov5l.pt --conf 0.55 --classes 0".split())

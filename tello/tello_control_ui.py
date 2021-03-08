@@ -11,6 +11,8 @@ import platform
 import tello
 import detect as dt
 
+from multiprocessing import Process, Pipe
+
 DRONE = False
 
 
@@ -86,6 +88,13 @@ class TelloUI:
 
         self.state_message = tki.StringVar()
         self.state_message.set("this is drone state")
+        self.parent_conn, self.child_conn = Pipe()
+        if DRONE:
+            self.p = Process(target=dt.start_detect, args=(
+                "--source udp://@0.0.0.0:11111 --weights ../weights/yolov5s.pt --conf 0.55 --classes 0".split(), self.child_conn))
+        else:
+            self.p = Process(target=dt.start_detect, args=("--source 0 --weights ../weights/yolov5s.pt --conf 0.55 --classes "
+                                                           "0".split(), self.child_conn))
 
     def YoloLoop(self):
         try:
@@ -97,60 +106,9 @@ class TelloUI:
             print(e)
 
     def _yoloBegin(self):
-        if DRONE:
-            dt.start_detect("--source udp://@0.0.0.0:11111 --weights ../weights/yolov5l.pt --conf 0.55 --classes 0".split())
-        else:
-            dt.start_detect("--source 0 --weights ../weights/yolov5l.pt --conf 0.55 --classes 0".split())
-
-    # def videoLoop(self):
-    #     """
-    #     The mainloop thread of Tkinter
-    #     Raises:
-    #         RuntimeError: To get around a RunTime error that Tkinter throws due to threading.
-    #     """
-    #     try:
-    #         # start the thread that get GUI image and drwa skeleton
-    #
-    #         while not self.stopEvent.is_set():
-    #             system = platform.system()
-    #
-    #             # comment image show part,to process image get from tello by yolo
-    #
-    #             # # read the frame for GUI show
-    #             # self.frame = self.tello.read()
-    #             # if self.frame is None or self.frame.size == 0:
-    #             #     continue
-    #             #
-    #             #     # transfer the format from frame to image
-    #             # image = Image.fromarray(self.frame)
-    #             #
-    #             # # we found compatibility problem between Tkinter,PIL and Macos,and it will
-    #             # # sometimes result the very long preriod of the "ImageTk.PhotoImage" function,
-    #             # # so for Macos,we start a new thread to execute the _updateGUIImage function.
-    #             # if system == "Windows" or system == "Linux":
-    #             #     self._updateGUIImage(image)
-    #             #
-    #             # else:
-    #             #     thread_tmp = threading.Thread(target=self._updateGUIImage, args=(image,))
-    #             #     thread_tmp.start()
-    #             #     time.sleep(0.03)
-    #     except RuntimeError as e:
-    #         print("[INFO] caught a RuntimeError")
-
-    # def _updateGUIImage(self, image):
-    #     """
-    #     Main operation to initial the object of image,and update the GUI panel
-    #     """
-    #     image = ImageTk.PhotoImage(image)
-    #     # if the panel none ,we need to initial it
-    #     if self.panel is None:
-    #         self.panel = tki.Label(image=image)
-    #         self.panel.image = image
-    #         self.panel.pack(side="left", padx=10, pady=10)
-    #     # otherwise, simply update the panel
-    #     else:
-    #         self.panel.configure(image=image)
-    #         self.panel.image = image
+        self.p.start()
+        self.p.join()
+        print("chile process exit".format())
 
     def _sendingCommand(self):
         """
@@ -173,10 +131,8 @@ class TelloUI:
 
     def _updateMess(self):
         while True:
-            if dt.tools.finishOnePic:
-                self.setStateMessage(dt.tools.resultList)
-            else:
-                self.setStateMessage([]);
+            result = self.parent_conn.recv()
+            self.setStateMessage(result)
             time.sleep(0.01)
 
     def setStateMessage(self, stateMess):
@@ -415,7 +371,7 @@ class TelloUI:
     def onClose(self):
         """
         set the stop event, cleanup the camera, and allow the rest of
-        
+
         the quit process to continue
         """
         print("[INFO] closing...")
