@@ -96,6 +96,9 @@ class TelloUI:
             self.p = Process(target=dt.start_detect, args=("--source 0 --weights ../weights/yolov5s.pt --conf 0.55 --classes "
                                                            "0".split(), self.child_conn))
 
+        self.change_degree = (480.0 / 2.0, 640.0 / 2.0)
+        self.current_center = ()
+
     def YoloLoop(self):
         try:
             time.sleep(0.5)
@@ -130,10 +133,27 @@ class TelloUI:
         self.quit_waiting_flag = True
 
     def _updateMess(self):
+        start_time = time.time()
         while True:
             result = self.parent_conn.recv()
             self.setStateMessage(result)
+            temp = (result[1][0] - result[0][0], result[1][1] - result[0][1])
+            self.change_degree = (self.current_center[0] - temp[0], self.current_center[1] - temp[1])
+            self.current_center = temp
             time.sleep(0.01)
+            end_time = time.time()
+            if (end_time - start_time >= 1.0):
+                self.degree_control()
+                start_time = time.time()
+                end_time = time.time()
+
+    def degree_control(self):
+        if (self.change_degree[0] > 0):
+            print("cw {} m".format(int(self.change_degree[0])))
+            self.tello.rotate_cw(int(self.change_degree[0]))
+        else:
+            print("ccw {} m".format(int(self.change_degree[0])))
+            self.tello.rotate_ccw(int(self.change_degree[0]))
 
     def setStateMessage(self, stateMess):
         mess = ''

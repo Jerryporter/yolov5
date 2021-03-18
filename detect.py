@@ -19,7 +19,7 @@ parser = argparse.ArgumentParser()
 opt = parser.parse_args()
 
 
-def detect(conn,save_img=False):
+def detect(conn, save_img=False):
     source, weights, view_img, save_txt, imgsz = opt.source, opt.weights, opt.view_img, opt.save_txt, opt.img_size
     webcam = source.isnumeric() or source.endswith('.txt') or source.lower().startswith(
         ('rtsp://', 'rtmp://', 'http://', 'udp://'))
@@ -100,7 +100,7 @@ def detect(conn,save_img=False):
             gn = torch.tensor(im0.shape)[[1, 0, 1, 0]]  # normalization gain whwh
 
             count = -1
-            result_list=[]
+            result_list = []
             if len(det):
                 # Rescale boxes from img_size to im0 size
                 det[:, :4] = scale_coords(img.shape[2:], det[:, :4], im0.shape).round()
@@ -109,7 +109,6 @@ def detect(conn,save_img=False):
                 for c in det[:, -1].unique():
                     n = (det[:, -1] == c).sum()  # detections per class
                     s += f"{n} {names[int(c)]}{'s' * (n > 1)}, "  # add to string
-
 
                 # Write results
                 for *xyxy, conf, cls in reversed(det):
@@ -128,12 +127,13 @@ def detect(conn,save_img=False):
                         # print("**********************************\n")
                         # print((int(xyxy[0]), int(xyxy[1])), (int(xyxy[2]), int(xyxy[3])))
                         # print("**********************************\n")
-                        result_list.append([(int(xyxy[0]), int(xyxy[1])), (int(xyxy[2]), int(xyxy[3]))])
+                        result_list.append((int(xyxy[0]), int(xyxy[1])))
+                        result_list.append((int(xyxy[2]), int(xyxy[3])))
             conn.send(result_list)
             result_list.clear()
             # Print time (inference + NMS)
-            print(f'{s}Done. ({t2 - t1:.3f}s)')
-            print('\n' + "---------------------------------------------")
+            # print(f'{s}Done. ({t2 - t1:.3f}s)')
+            # print('\n' + "---------------------------------------------")
             # Stream results
             if view_img:
                 cv2.imshow(str(p), im0)
@@ -163,7 +163,7 @@ def detect(conn,save_img=False):
     # print(f'Done. ({time.time() - t0:.3f}s)')
 
 
-def start_detect(instr,conn):
+def start_detect(instr, conn):
     # print(instr)
     parser.add_argument('--weights', nargs='+', type=str, default='yolov5s.pt', help='model.pt path(s)')
     parser.add_argument('--source', type=str, default='data/images',

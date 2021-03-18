@@ -4,7 +4,6 @@ import time
 import numpy as np
 
 
-
 class Tello:
     """Wrapper class to interact with the Tello drone."""
 
@@ -223,7 +222,7 @@ class Tello:
 
         """
 
-        return self.send_command('cw %s'.format(degrees))
+        return self.send_command('cw %s' % degrees)
 
     def rotate_ccw(self, degrees):
         """
