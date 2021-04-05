@@ -8,7 +8,7 @@ This repository represents Ultralytics open-source research into future object d
 
 <img src="https://user-images.githubusercontent.com/26833433/103594689-455e0e00-4eae-11eb-9cdf-7d753e2ceeeb.png" width="1000">** GPU Speed measures end-to-end time per image averaged over 5000 COCO val2017 images using a V100 GPU with batch size 32, and includes image preprocessing, PyTorch FP16 inference, postprocessing and NMS. EfficientDet data from [google/automl](https://github.com/google/automl) at batch size 8.
 
-- **January 5, 2021**: [v4.0 release](https://github.com/ultralytics/yolov5/releases/tag/v4.0): nn.SiLU() activations, [Weights & Biases](https://wandb.ai/) logging, [PyTorch Hub](https://pytorch.org/hub/ultralytics_yolov5/) integration.
+- **January 5, 2021**: [v4.0 release](https://github.com/ultralytics/yolov5/releases/tag/v4.0): nn.SiLU() activations, [Weights & Biases](https://wandb.ai/site?utm_campaign=repo_yolo_readme) logging, [PyTorch Hub](https://pytorch.org/hub/ultralytics_yolov5/) integration.
 - **August 13, 2020**: [v3.0 release](https://github.com/ultralytics/yolov5/releases/tag/v3.0): nn.Hardswish() activations, data autodownload, native AMP.
 - **July 23, 2020**: [v2.0 release](https://github.com/ultralytics/yolov5/releases/tag/v2.0): improved model definition, training and mAP.
 - **June 22, 2020**: [PANet](https://arxiv.org/abs/1803.01534) updates: new heads, reduced parameters, improved speed and mAP [364fcfd](https://github.com/ultralytics/yolov5/commit/364fcfd7dba53f46edd4f04c037a039c0a287972).
@@ -49,7 +49,9 @@ $ pip install -r requirements.txt
 ## Tutorials
 
 * [Train Custom Data](https://github.com/ultralytics/yolov5/wiki/Train-Custom-Data)&nbsp; 🚀 RECOMMENDED
+* [Tips for Best Training Results](https://github.com/ultralytics/yolov5/wiki/Tips-for-Best-Training-Results)&nbsp; ☘️ RECOMMENDED
 * [Weights & Biases Logging](https://github.com/ultralytics/yolov5/issues/1289)&nbsp; 🌟 NEW
+* [Supervisely Ecosystem](https://github.com/ultralytics/yolov5/issues/2518)&nbsp; 🌟 NEW
 * [Multi-GPU Training](https://github.com/ultralytics/yolov5/issues/475)
 * [PyTorch Hub](https://github.com/ultralytics/yolov5/issues/36)&nbsp; ⭐ NEW
 * [ONNX and TorchScript Export](https://github.com/ultralytics/yolov5/issues/251)
@@ -108,11 +110,11 @@ To run **batched inference** with YOLOv5 and [PyTorch Hub](https://github.com/ul
 import torch
 
 # Model
-model = torch.hub.load('ultralytics/yolov5', 'yolov5s', pretrained=True)
+model = torch.hub.load('ultralytics/yolov5', 'yolov5s')
 
 # Images
 dir = 'https://github.com/ultralytics/yolov5/raw/master/data/images/'
-imgs = [dir + f for f in ('zidane.jpg', 'bus.jpg')]  # batched list of images
+imgs = [dir + f for f in ('zidane.jpg', 'bus.jpg')]  # batch of images
 
 # Inference
 results = model(imgs)
