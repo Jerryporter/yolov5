@@ -31,7 +31,7 @@ class TelloUI:
 
         self.tello = tello  # videostream device
         self.outputPath = outputpath  # the path that save pictures created by clicking the takeSnapshot button
-        self.frame = None  # frame read from h264decoder and used for pose recognition 
+        self.frame = None  # frame read from h264decoder and used for pose recognition
         self.thread = None  # thread of the Tkinter mainloop
         self.stopEvent = None
 
@@ -96,9 +96,6 @@ class TelloUI:
             self.p = Process(target=dt.start_detect, args=("--source 0 --weights ../weights/yolov5s.pt --conf 0.55 --classes "
                                                            "0".split(), self.child_conn))
 
-        self.change_degree = (480.0 / 2.0, 640.0 / 2.0)
-        self.current_center = ()
-
     def YoloLoop(self):
         try:
             time.sleep(0.5)
@@ -128,32 +125,28 @@ class TelloUI:
 
     def _setQuitWaitingFlag(self):
         """
-        set the variable as TRUE,it will stop computer waiting for response from tello  
+        set the variable as TRUE,it will stop computer waiting for response from tello
         """
         self.quit_waiting_flag = True
 
     def _updateMess(self):
-        start_time = time.time()
         while True:
             result = self.parent_conn.recv()
             self.setStateMessage(result)
-            temp = (result[1][0] - result[0][0], result[1][1] - result[0][1])
-            self.change_degree = (self.current_center[0] - temp[0], self.current_center[1] - temp[1])
-            self.current_center = temp
+            if (len(result) != 0):
+                print(result)
+                self._judge(result)
             time.sleep(0.01)
-            end_time = time.time()
-            if (end_time - start_time >= 1.0):
-                self.degree_control()
-                start_time = time.time()
-                end_time = time.time()
 
-    def degree_control(self):
-        if (self.change_degree[0] > 0):
-            print("cw {} m".format(int(self.change_degree[0])))
-            self.tello.rotate_cw(int(self.change_degree[0]))
-        else:
-            print("ccw {} m".format(int(self.change_degree[0])))
-            self.tello.rotate_ccw(int(self.change_degree[0]))
+    def _judge(self, result):
+        x = (result[0][0][0] + result[0][1][0]) >> 1
+        y = (result[0][0][1] + result[0][1][1]) >> 1
+        half_m = 240
+        half_n = 320
+        if x > 340:
+            self.telloCW(3)
+        elif x < 300:
+            self.telloCCW(3)
 
     def setStateMessage(self, stateMess):
         mess = ''
