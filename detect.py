@@ -15,11 +15,16 @@ from utils.general import check_img_size, check_requirements, check_imshow, non_
 from utils.plots import plot_one_box
 from utils.torch_utils import select_device, load_classifier, time_synchronized
 
+import utils.TrackerUtility
+
 parser = argparse.ArgumentParser()
 opt = parser.parse_args()
 
 
 def detect(conn, save_img=False):
+    # create tracker
+    tracker = utils.TrackerUtility.TrackerUtility()
+
     source, weights, view_img, save_txt, imgsz = opt.source, opt.weights, opt.view_img, opt.save_txt, opt.img_size
     webcam = source.isnumeric() or source.endswith('.txt') or source.lower().startswith(
         ('rtsp://', 'rtmp://', 'http://', 'udp://'))
@@ -100,6 +105,7 @@ def detect(conn, save_img=False):
             gn = torch.tensor(im0.shape)[[1, 0, 1, 0]]  # normalization gain whwh
 
             count = -1
+            # position store list and will pass to tello control panel
             result_list = []
             if len(det):
                 # Rescale boxes from img_size to im0 size
@@ -122,13 +128,23 @@ def detect(conn, save_img=False):
 
                     if save_img or view_img:  # Add bbox to image
                         label = '{0} {1:.2f} target{2}'.format(names[int(cls)], conf, count)
+                        p1, p2 = (int(xyxy[0]), int(xyxy[1])), (int(xyxy[2]), int(xyxy[3]))
+                        tracker.init(im0, (p1[0], p1[1], p[2] - p[0], p[3] - p[1]))
+                        trackresult = tracker.update(im0)
+                        if trackresult is not None:
+                            s1 = (int(trackresult[0]), int(trackresult[1]))
+                            s2 = (int(trackresult[0] + trackresult[2]), int(trackresult[1] + trackresult[3]))
+                            cv2.rectangle(im0, p1, p2, (255, 0, 0), 2, 1)
+                        else:
+                            pass
                         plot_one_box(xyxy, im0, label=label, color=colors[int(cls)], line_thickness=3)
                         # print the position of object which is in the picture
                         # print("**********************************\n")
                         # print((int(xyxy[0]), int(xyxy[1])), (int(xyxy[2]), int(xyxy[3])))
                         # print("**********************************\n")
-                        result_list.append((int(xyxy[0]), int(xyxy[1])))
-                        result_list.append((int(xyxy[2]), int(xyxy[3])))
+                        result_list.append(p1)
+                        result_list.append(p2)
+                        break
             conn.send(result_list)
             result_list.clear()
             # Print time (inference + NMS)
